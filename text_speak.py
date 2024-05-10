@@ -66,7 +66,11 @@ async def ask_chatgpt_async(question, openai_api_key):
     async with aiohttp.ClientSession() as session:
         async with session.post(url, json=payload, headers=headers) as response:
             result = await response.json()
-            return extract_concise_answer(result)
+            print("API Response:", result)  # Debug: Print the raw API response
+            if 'choices' in result:
+                return extract_concise_answer(result)
+            else:
+                return "Error: No choices in response. Check API call."
 
 # Function to speak text using gTTS and play it
 def speak_text(text):
