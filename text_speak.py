@@ -67,10 +67,13 @@ async def ask_chatgpt_async(question, openai_api_key):
         async with session.post(url, json=payload, headers=headers) as response:
             result = await response.json()
             print("API Response:", result)  # Debug: Print the raw API response
-            if 'choices' in result:
+            if 'error' in result:
+                if 'message' in result['error'] and 'quota' in result['error']['message']:
+                    return "Error: Quota exceeded. Please check your OpenAI API plan limits."
+            elif 'choices' in result:
                 return extract_concise_answer(result)
             else:
-                return "Error: No choices in response. Check API call."
+                return "Error: Unexpected API response format."
 
 # Function to speak text using gTTS and play it
 def speak_text(text):
