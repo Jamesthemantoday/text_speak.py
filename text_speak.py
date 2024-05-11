@@ -93,7 +93,7 @@ def main(filename, question, ocr_api_key, openai_api_key):
 # Example usage
 if __name__ == "__main__":
     filename = '/home/jasalat/text.jpg'
-    question = "Answer this question, and end your response with a short summary of what you said. When you start this summary use words like in conclusion, or summarize, and keep these summaries 4 sentences or less."
+    question = "Briefly answer the following, then summarize the key points in four sentences starting with 'In conclusion'"
     ocr_api_key = "Your_OCR_API_Key"
     openai_api_key = "Your_OpenAI_API_Key"
     main(filename, question, ocr_api_key, openai_api_key)
