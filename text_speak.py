@@ -1,6 +1,7 @@
 import hashlib
 import requests
 import time
+import datetime
 import aiohttp
 import asyncio
 from gtts import gTTS
@@ -66,23 +67,31 @@ async def ask_chatgpt_async(question, openai_api_key):
     async with aiohttp.ClientSession() as session:
         async with session.post(url, json=payload, headers=headers) as response:
             result = await response.json()
-            print("API Response:", result)  # Debug: Print the raw API response
-            if 'error' in result:
-                if 'message' in result['error'] and 'quota' in result['error']['message']:
-                    return "Error: Quota exceeded. Please check your OpenAI API plan limits."
-            elif 'choices' in result:
-                return extract_concise_answer(result)
-            else:
-                return "Error: Unexpected API response format."
+            return extract_concise_answer(result)
 
 # Function to speak text using gTTS and play it
 def speak_text(text):
     tts = gTTS(text=text, lang='en')
-    tts.save('response.mp3')  # Save the spoken text to an mp3 file
+    tts.save('response.mp3')
     os.system('mpg123 -q response.mp3')  # Play the mp3 file using mpg123
 
+# Scheduled capture function
+def scheduled_capture(warning_time, capture_time):
+    while True:
+        now = datetime.datetime.now()
+        if now >= warning_time and now < capture_time:
+            speak_text("Capture will happen in {} seconds.".format(int((capture_time - now).total_seconds())))
+            time.sleep((capture_time - now).total_seconds())  # Sleep till capture time
+            speak_text("Capturing now.")
+            # Trigger the capture function here
+            break
+        time.sleep(10)  # Check every 10 seconds
+
 # Main function to orchestrate the calls
-def main(filename, question, ocr_api_key, openai_api_key):
+def main(filename, question, ocr_api_key, openai_api_key, warning_time, capture_time):
+    # Setup capture timing
+    scheduled_capture(warning_time, capture_time)
+    # OCR and ChatGPT integration
     ocr_result = ocr_space_file_with_cache(filename, ocr_api_key)
     parsed_text = clean_text(ocr_result['ParsedResults'][0].get('ParsedText', ''))
     loop = asyncio.get_event_loop()
@@ -93,7 +102,9 @@ def main(filename, question, ocr_api_key, openai_api_key):
 # Example usage
 if __name__ == "__main__":
     filename = '/home/jasalat/text.jpg'
-    question = "Briefly answer the following, then summarize the key points in four sentences starting with 'In conclusion'"
+    question = "Briefly answer this question, and end your response with a short summary of what you said. When you start this summary use words like in conclusion, or summarize, and keep these summaries 4 sentences or less."
     ocr_api_key = "Your_OCR_API_Key"
     openai_api_key = "Your_OpenAI_API_Key"
-    main(filename, question, ocr_api_key, openai_api_key)
+    warning_time = datetime.datetime.now() + datetime.timedelta(seconds=30)  # Set 30 seconds from now
+    capture_time = warning_time + datetime.timedelta(seconds=10)  # Set 10 seconds after warning
+    main(filename, question, ocr_api_key, openai_api_key, warning_time, capture_time)
